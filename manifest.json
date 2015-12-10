@@ -1,0 +1,21 @@
+{
+    "manifest_version": 2,
+    "name": "WalkMe extension",
+    "description": "Test project",
+    "version": "1.0.0",
+    "browser_action": {
+    "default_icon": "assets/icon.png",
+        "default_popup": "app.html"
+    },
+    "content_scripts": [
+        {
+            "matches": [ "http://*.walkme.com/*" ],
+            "js": [ "js/content.js" ]
+        }
+    ],
+    "permissions": [
+        "tabs",
+        "http://*/*",
+        "https://*/*"
+    ]
+}

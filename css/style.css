@@ -1,0 +1,30 @@
+* {
+    margin  : 0px;
+    padding : 0px;
+}
+
+html, body {
+    height: 0px;
+}
+
+#throbber {
+    display : block;
+    width   : 250px;
+    height  : 187.5px;
+    margin  : 61.75px 25px;
+}
+
+#throbber.hidden {
+    display: none;
+}
+
+#container-result {
+    width      : 300px;
+    padding    : 20px;
+    box-sizing : border-box;
+    word-break : break-all;
+}
+
+#container-result.hidden {
+    display: none;
+}
