@@ -181,7 +181,9 @@
     ( function( WalkMe ) {
 
         const regexUrl       = /(\b(https?):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|]settings\.txt)/gim;
-        const regexLibFile   = /\'LibFile\':\'([^\']+)\'/gi;
+        const regexFile      = /fixedCallback\(([\s\S]+)\);$/gi;
+        const regexReplace   = /\'/g;
+
         const throbberDomId  = "throbber";
         const containerDomId = "container-result";
         const urlPrefix      = "walkme.com";
@@ -217,19 +219,73 @@
                 });
             }
 
+            printAdditionalInfo( data ) {
+                if ( equal( typeof data, "object" ) ) {
+                    if ( equal( typeof data.libFile, "string" ) )
+                        this.printLibraryFileInfo( data.libFile );
+
+                    if ( equal( typeof data.DataFiles, "object" ) ) {
+                        let info = data.DataFiles[ 0 ];
+
+                        if ( equal( typeof info, "object" ) ) {
+                            this.printDataFilesUrl( info.url );
+                            this.printLanguagesInfo( info.languages );
+                        }
+                    }
+                }
+            }
+
             printLibraryFileInfo( data ) {
                 assert( equal( typeof data, "string" ),
-                    "Can't print the library information, because the given data is NOT a type of `string`."
+                    "Can't print the library file info, because the given data is NOT a type of `string`."
                 );
 
                 let container = document.getElementById( containerDomId );
                 container.innerHTML += "LibFile - " + data;
             }
 
+            printDataFilesUrl( url ) {
+                assert( equal( typeof url, "string" ),
+                    "Can't print the URL of the data files, because it's NOT a type of `string`."
+                );
+
+                let container = document.getElementById( containerDomId );
+                let div = document.createElement( "div" );
+                div.innerHTML = "<br>Data files URL:<br>" + url;
+                container.appendChild( div );
+            }
+
+            printLanguagesInfo( languages ) {
+                if ( languages instanceof Array ) {
+                    let container = document.getElementById( containerDomId );
+
+                    for ( let item of languages ) {
+                        const node = {
+                            shortName    : equal( item.shortName, "" )   ? "none" : item.displayName,
+                            diplayName   : equal( item.displayName, "" ) ? "none" : item.displayName,
+                            showInPlayer : item.showInPlayer
+                        };
+
+                        let list = document.createElement( "ul" );
+                        list.innerText = "Language:";
+
+                        for ( let item in node ) {
+                            let option = document.createElement( "li" );
+                            option.style.marginLeft = "25px";
+                            option.innerText = node[ item ];
+                            list.appendChild( option );
+                        }
+
+                        container.appendChild( document.createElement( "br" ) );
+                        container.appendChild( list );
+                    }
+                }
+            }
+
             readCurrentTab() {
                 let self = this;
 
-                chrome.tabs.query( { "active": true }, function( tabs ) {
+                chrome.tabs.query( { "active": true, "currentWindow": true }, function( tabs ) {
                     if ( !tabs || equal( tabs.length, 0 ) )
                         self.printNullablePage();
                     else {
@@ -285,11 +341,24 @@
                             "Can't continue to find `settings.txt` path, because the fetched string after regular expression is NOT a type of `string`."
                         );
 
-                        let fileContent = yield WalkMe.Web.sendRequest( fetchedUrl[ 0 ] );
-                        let libraryFile = regexLibFile.exec( fileContent );
-                        self.printLibraryFileInfo( libraryFile[ 1 ] );
+                        let fileContent   = yield WalkMe.Web.sendRequest( fetchedUrl[ 0 ] );
+                        let data = self.parseFileContent( fileContent );
+                        self.printAdditionalInfo( data );
                     }
                 });
+            }
+
+            parseFileContent( content ) {
+                assert( equal( typeof content, "string" ),
+                    "Can't parse the file content, because the given content isn't a type of `string`."
+                );
+
+                let data = regexFile.exec( content );
+
+                if ( !data )
+                    throw new Error( "Can't parse the file content, because the fetched data after regular expression is undefined." );
+
+                return JSON.parse( data[ 1 ].replace( regexReplace,'"' ) );
             }
 
             parseDocument( documentObject ) {

@@ -38,7 +38,7 @@ Screenshots:
 
 *- the successful result*
 
-![Image of successful result](http://s16.postimg.org/4kiwi0c2t/Screenshot_86.png)
+![Image of successful result](http://s28.postimg.org/al9iqs8l9/Screenshot_90.png)
 
 *- the unsuccessful result*
 
