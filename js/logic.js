@@ -6,14 +6,14 @@
     function equal( firstItem, secondItem ) {
         return firstItem === secondItem;
     }
- 
+
     function assert( condition, message ) {
         if ( equal( condition, "boolean" ) )
             throw new Error( "Can't handle the assertion, because the given condition is NOT a type of `boolean`." );
- 
+
         if ( equal( message, "string" ) )
             throw new Error( "Can't handle the assertion, because the given message is NOT a type of `string`." );
- 
+
         if ( !condition )
             throw new Error( message );
     }
@@ -68,6 +68,10 @@
             assert( equal( typeof url, "string" ),
                 "Can't handle the web-request, because the given url is NOT a type of `string`."
             );
+
+            if ( !equal( url.indexOf( "chrome-extension://" ), -1 ) ||
+                 !equal( url.indexOf( "twitter" ), -1 ) )
+                return;
 
             let self = this;
             let request = new Request( url );
@@ -186,7 +190,7 @@
 
         const throbberDomId  = "throbber";
         const containerDomId = "container-result";
-        const urlPrefix      = "walkme.com";
+        const urlPrefix      = "walkme";
         const fetchKeyword   = "fetch->dom";
         const htmlTemplate   = "\
             www.walkme.com - WalkMe enabled<br>\
@@ -294,15 +298,15 @@
 
                         chrome.tabs.sendMessage( tabId, fetchKeyword,
                             function( response ) {
-                                if ( response ) {
+                                if ( !response )
+                                    self.printNullablePage();
+                                else {
                                     let documentObject = self.prepareDocumentObject( response );
 
-                                    ( url.indexOf( urlPrefix ) !== -1 )
+                                    ( !equal( url.indexOf( urlPrefix ), -1 ) )
                                         ? self.parseDocument( documentObject )
                                         : self.printNullablePage();
                                 }
-                                else
-                                    self.printNullablePage();
                             }
                         );
                     }
@@ -341,7 +345,7 @@
                             "Can't continue to find `settings.txt` path, because the fetched string after regular expression is NOT a type of `string`."
                         );
 
-                        let fileContent   = yield WalkMe.Web.sendRequest( fetchedUrl[ 0 ] );
+                        let fileContent = yield WalkMe.Web.sendRequest( fetchedUrl[ 0 ] );
                         let data = self.parseFileContent( fileContent );
                         self.printAdditionalInfo( data );
                     }
@@ -358,7 +362,7 @@
                 if ( !data )
                     throw new Error( "Can't parse the file content, because the fetched data after regular expression is undefined." );
 
-                return JSON.parse( data[ 1 ].replace( regexReplace,'"' ) );
+                return JSON.parse( data[ 1 ].replace( regexReplace, '"' ) );
             }
 
             parseDocument( documentObject ) {
@@ -366,24 +370,33 @@
                     "Can't parse the given DOM object, because the given document object is NOT an instance of `HTMLDocument`."
                 );
 
+                let parsedData = null;
                 let outputData = new Set();
                 let scripts = documentObject.getElementsByTagName( "script" );
 
                 for ( let i = 0; i < scripts.length; i++ ) {
                     let item = scripts[ i ];
 
-                    if ( !equal( typeof item, "undefined" ) && item.src.indexOf( "cdn." + urlPrefix ) !== -1 ) {
-                        let parsedData = this.parseScriptUrl( item.src );
+                    if ( !equal( typeof item, "undefined" ) && !equal( item.src.indexOf( urlPrefix ), -1 ) ) {
+                        try {
+                            parsedData = this.parseScriptUrl( item.src );
+                        }
+                        catch( exception ) {
+                            // console.error( exception );
+                        }
+                        finally {
+                            if ( parsedData ) {
+                                outputData.add( WalkMe.Models.UrlData({
+                                    userId      : parsedData.userId,
+                                    environment : parsedData.environment,
+                                    hostname    : parsedData.hostname,
+                                    https       : parsedData.isSecure,
+                                    async       : item.async
+                                }));
 
-                        outputData.add( WalkMe.Models.UrlData({
-                            userId      : parsedData.userId,
-                            environment : parsedData.environment,
-                            hostname    : parsedData.hostname,
-                            https       : parsedData.isSecure,
-                            async       : item.async
-                        }));
-
-                        this.findTextFileUrl( item.src );
+                                this.findTextFileUrl( item.src );
+                            }
+                        }
                     }
                 }
 
