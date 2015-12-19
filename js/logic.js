@@ -190,7 +190,7 @@
 
         const throbberDomId  = "throbber";
         const containerDomId = "container-result";
-        const urlPrefix      = "walkme";
+        const searchKeyword  = "walkme";
         const fetchKeyword   = "fetch->dom";
         const htmlTemplate   = "\
             www.walkme.com - WalkMe enabled<br>\
@@ -303,7 +303,7 @@
                                 else {
                                     let documentObject = self.prepareDocumentObject( response );
 
-                                    ( !equal( url.indexOf( urlPrefix ), -1 ) )
+                                    ( !equal( response.indexOf( searchKeyword ), -1 ) )
                                         ? self.parseDocument( documentObject )
                                         : self.printNullablePage();
                                 }
@@ -347,7 +347,9 @@
 
                         let fileContent = yield WalkMe.Web.sendRequest( fetchedUrl[ 0 ] );
                         let data = self.parseFileContent( fileContent );
-                        self.printAdditionalInfo( data );
+
+                        if ( equal( typeof data, "object" ) )
+                            self.printAdditionalInfo( data );
                     }
                 });
             }
@@ -360,7 +362,7 @@
                 let data = regexFile.exec( content );
 
                 if ( !data )
-                    throw new Error( "Can't parse the file content, because the fetched data after regular expression is undefined." );
+                    return;
 
                 return JSON.parse( data[ 1 ].replace( regexReplace, '"' ) );
             }
@@ -377,7 +379,7 @@
                 for ( let i = 0; i < scripts.length; i++ ) {
                     let item = scripts[ i ];
 
-                    if ( !equal( typeof item, "undefined" ) && !equal( item.src.indexOf( urlPrefix ), -1 ) ) {
+                    if ( !equal( typeof item, "undefined" ) && !equal( item.src.indexOf( searchKeyword ), -1 ) ) {
                         try {
                             parsedData = this.parseScriptUrl( item.src );
                         }

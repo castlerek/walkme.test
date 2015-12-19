@@ -9,7 +9,7 @@
     },
     "content_scripts": [
         {
-            "matches": [ "http://*.walkme.com/*" ],
+            "matches": [ "http://*/*" ],
             "js": [ "js/content.js" ]
         }
     ],
